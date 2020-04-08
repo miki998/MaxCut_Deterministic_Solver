@@ -7,29 +7,36 @@ class Greedy:
 		self.coeff_matrix = coeff_matrix
 		self.vertices = vertices
 		
+		#getting the edges
+		self.edges = []
+		for row in range(len(coeff_matrix)):
+			for col in range(row+1,len(coeff_matrix)):
+				if self.coeff_matrix[row,col] != 0: self.edges.append([self.coeff_matrix[row,col],row,col])
+
+
 	def associate(self):
 		S = []
 		assigned = []
 		dummy = self.coeff_matrix.copy()
-		#print(dummy)
-		while len(assigned) < len(self.vertices):
-			#print(np.argmax(dummy))
-			(i,j) = np.argmax(dummy)//len(self.coeff_matrix), np.argmax(dummy)%len(self.coeff_matrix)
-			#print(i,j)
-			if dummy[i,j] == 0: break
-			if i in assigned:
-				if i not in S: 
-					S.append(j)
-					assigned.append(j)
+		#sort the edge sets by weight
+		self.edges = sorted(self.edges ,key = lambda x: x[0],reverse=True)
+		#print(self.edges)
+		for item in self.edges:
+			_,i,j = item
+		
+			if i in assigned and j in assigned: break
+			elif i in assigned: 
+				if i not in S: S.append(j)
+				assigned.append(j)
 			elif j in assigned:
-				if j not in S: 
-					S.append(i)
-					assigned.append(i)
-			else: 
+				if j not in S: S.append(i)
+				assigned.append(i)
+			else:
+				# heuristic here, we always put the smaller index in S when we have to pick
 				S.append(min(i,j))
 				assigned.append(i)
 				assigned.append(j)
-			dummy[i,j] = 0
+
 		return S
 
 	def weight_calculate(self,S):
