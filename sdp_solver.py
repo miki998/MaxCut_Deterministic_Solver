@@ -75,10 +75,3 @@ class Grad_Proj:
 			self.l_triangle = self.normalize(self.l_triangle+alpha *P)
 		return self.l_triangle
 
-
-
-
-class Primal_Dual:
-
-	def __init__(self):
-		pass

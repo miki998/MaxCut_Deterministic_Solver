@@ -53,10 +53,6 @@ class Sdp_relax_algo:
 
 			Y = prob.solution.primal_vars[list(prob.solution.primal_vars.keys())[0]]
 
-		#Primal_Dual(matrix,X_init)
-		if method == 'prime-dual':
-			pass
-		
 		return Y
 
 	def proba_rounding_vector(self,method='standard'):
