@@ -2,7 +2,7 @@
 import numpy as np
 import math
 from sdp_solver import *
-import cvxpy as cp
+#import cvxpy as cp
 
 """ 
 
@@ -33,27 +33,27 @@ class Sdp_relax_algo:
 			Y = g.solve()
 		
 		#Standard method, python lib CVX
-		if method == 'standard':
-			C = -(self.matrix+self.matrix.T)
-			A = []
-			b = []
-			for i in range(self.n):
-				tmp = 	np.zeros((self.n,self.n))
-				tmp[i,i] = 1
-				A.append(tmp)
-				b.append(1)
+#		if method == 'standard':
+#			C = -(self.matrix+self.matrix.T)
+#			A = []
+#			b = []
+#			for i in range(self.n):
+#				tmp = 	np.zeros((self.n,self.n))
+#				tmp[i,i] = 1
+#				A.append(tmp)
+#				b.append(1)
+#
+#			X = cp.Variable((self.n,self.n), PSD=True)
+#			constraints = [
+#				cp.trace(A[i] @ X) == b[i] for i in range(self.n)
+#			]			
+#			prob = cp.Problem(cp.Maximize(cp.trace(C @ X)),
+#					   constraints)
+#			prob.solve()
 
-			X = cp.Variable((self.n,self.n), PSD=True)
-			constraints = [
-				cp.trace(A[i] @ X) == b[i] for i in range(self.n)
-			]			
-			prob = cp.Problem(cp.Maximize(cp.trace(C @ X)),
-					   constraints)
-			prob.solve()
+		#	Y = prob.solution.primal_vars[list(prob.solution.primal_vars.keys())[0]]
 
-			Y = prob.solution.primal_vars[list(prob.solution.primal_vars.keys())[0]]
-
-		return Y
+		#return Y
 
 	def proba_rounding_vector(self,method='standard'):
 
@@ -63,16 +63,28 @@ class Sdp_relax_algo:
 		# Different Random Generators for symmetrical vector
 		#Gen1
 		r = np.random.normal(0,1,N)
-
+		r /= np.linalg.norm(r, axis=0)
 		
 		return np.matmul(r,V)>0
 
 
-	def deter_rounding_vector(self):
+	def deter_rounding_vector(self,method='standard',search_space=100):
 		#Watch proof, and check how to enumerate all posibilities of 
 		#normal distrib with specific rand gen
-		pass
-
+		np.random.seed(45)
+		r = np.random.normal(0,1,N)
+		V = self.sdp_solve(method=method)
+		N = len(V)
+		for coord in N:
+			result2 = []
+			for value in np.linspace(-1,1):
+				r[coord] = value
+				M = np.matmul(r,V)>0		
+				S = [i for i in range(len(M)) if M[i]]
+				T = [vertex for vertex in self.vertices if vertex not in S]
+				result2.append((1/4)*(np.sum(self.matrix+self.matrix.T) - np.sum(self.matrix[S,:][:,T])))
+			r[coord] = list(np.linspace(-1,1))[np.argmax(result2)]
+		return np.matmul(r,V)>0
 
 	def solve(self,method='standard',random=1):
 		if random: M = self.proba_rounding_vector(method=method)
