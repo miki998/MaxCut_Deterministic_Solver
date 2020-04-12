@@ -2,7 +2,7 @@
 import numpy as np
 import math
 from sdp_solver import *
-#import cvxpy as cp
+import cvxpy as cp
 
 """ 
 
@@ -33,27 +33,27 @@ class Sdp_relax_algo:
 			Y = g.solve()
 		
 		#Standard method, python lib CVX
-#		if method == 'standard':
-#			C = -(self.matrix+self.matrix.T)
-#			A = []
-#			b = []
-#			for i in range(self.n):
-#				tmp = 	np.zeros((self.n,self.n))
-#				tmp[i,i] = 1
-#				A.append(tmp)
-#				b.append(1)
-#
-#			X = cp.Variable((self.n,self.n), PSD=True)
-#			constraints = [
-#				cp.trace(A[i] @ X) == b[i] for i in range(self.n)
-#			]			
-#			prob = cp.Problem(cp.Maximize(cp.trace(C @ X)),
-#					   constraints)
-#			prob.solve()
+		if method == 'standard':
+			C = -(self.matrix+self.matrix.T)
+			A = []
+			b = []
+			for i in range(self.n):
+				tmp = 	np.zeros((self.n,self.n))
+				tmp[i,i] = 1
+				A.append(tmp)
+				b.append(1)
 
-		#	Y = prob.solution.primal_vars[list(prob.solution.primal_vars.keys())[0]]
+			X = cp.Variable((self.n,self.n), PSD=True)
+			constraints = [
+				cp.trace(A[i] @ X) == b[i] for i in range(self.n)
+			]			
+			prob = cp.Problem(cp.Maximize(cp.trace(C @ X)),
+					   constraints)
+			prob.solve()
 
-		#return Y
+			Y = prob.solution.primal_vars[list(prob.solution.primal_vars.keys())[0]]
+
+		return Y
 
 	def proba_rounding_vector(self,method='standard'):
 
@@ -68,22 +68,28 @@ class Sdp_relax_algo:
 		return np.matmul(r,V)>0
 
 
-	def deter_rounding_vector(self,method='standard',search_space=100):
+	def deter_rounding_vector(self,method='standard',search_space=50):
 		#Watch proof, and check how to enumerate all posibilities of 
 		#normal distrib with specific rand gen
 		np.random.seed(45)
-		r = np.random.normal(0,1,N)
+		
 		V = self.sdp_solve(method=method)
 		N = len(V)
-		for coord in N:
+		r = np.random.normal(0,1,N)
+		if np.allclose(self.matrix, np.tril(self.matrix)) or np.allclose(self.matrix, np.triu(self.matrix)):
+			A = self.matrix+self.matrix.T
+		else: 
+			A = self.matrix
+		for coord in range(N):
 			result2 = []
-			for value in np.linspace(-1,1):
+			search = np.array((np.linspace(-1,1,search_space),np.array(r[coord])))
+			for value in :
 				r[coord] = value
 				M = np.matmul(r,V)>0		
 				S = [i for i in range(len(M)) if M[i]]
 				T = [vertex for vertex in self.vertices if vertex not in S]
-				result2.append((1/4)*(np.sum(self.matrix+self.matrix.T) - np.sum(self.matrix[S,:][:,T])))
-			r[coord] = list(np.linspace(-1,1))[np.argmax(result2)]
+				result2.append(np.sum(A[S,:][:,T]))
+			r[coord] = list(search)[np.argmax(result2)]
 		return np.matmul(r,V)>0
 
 	def solve(self,method='standard',random=1):
@@ -91,5 +97,11 @@ class Sdp_relax_algo:
 		else: M = self.deter_rounding_vector()
 		S = [i for i in range(len(M)) if M[i]]
 		T = [vertex for vertex in self.vertices if vertex not in S]
+		
 
-		return (1/4)*(np.sum(self.matrix+self.matrix.T) - np.sum(self.matrix[S,:][:,T]))
+		# check if upper triangular or lower triangular because some formats of graphs give upper/lower only
+		if np.allclose(self.matrix, np.tril(self.matrix)) or np.allclose(self.matrix, np.triu(self.matrix)):
+			A = self.matrix+self.matrix.T
+			return np.sum(A[S,:][:,T])
+		else: return np.sum(self.matrix[S,:][:,T])
+

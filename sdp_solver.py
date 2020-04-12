@@ -50,6 +50,7 @@ class Grad_Proj:
 	def step_alpha(self,sig,alpha_init,l_matrix,grad,grad_proj):
 		#line search, here the paper uses Armijo
 		def inequality_check(alpha):
+			if alpha == 0: return 0
 			nextL = self.normalize(l_matrix+alpha*grad_proj)
 			left = self.objective_func(nextL)-self.objective_func(l_matrix)
 			right = sig*alpha*np.trace(np.matmul(grad,grad_proj))
@@ -69,9 +70,9 @@ class Grad_Proj:
 		
 		for _ in range(100):
 			grad, P = self.gradient_step(self.l_triangle)
-		
 			alpha = self.step_alpha(sig,alpha_init,self.l_triangle,grad,P)
 			#print(alpha)
 			self.l_triangle = self.normalize(self.l_triangle+alpha *P)
+			if alpha == 0: return self.l_triangle
 		return self.l_triangle
 
